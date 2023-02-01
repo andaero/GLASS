@@ -41,11 +41,53 @@ def build_config(my_path,config_path):
     # 输入所有cubic.cif数据
     # 建立one-hot编码以及保存设置
     atoms=[]
-    all_files = sorted(glob.glob(os.path.join(my_path,'mp-*.cif')))
+    # all_files = sorted(glob.glob(os.path.join(my_path,'mp-*.cif')))
+    all_files = sorted(glob.glob(os.path.join(my_path,'*.cif')))
+    # print(all_files)
+    ordered = 0
+    disordered = 0
     for path in tqdm(all_files):
         crystal = Structure.from_file(path)
+        print(crystal.composition)
+        # print(crystal.species)
+        if(crystal.is_ordered==False):
+            # print(path, " is not ordered")
+            print(crystal.composition.elements)
+            disordered += 1
+            continue
+        print(crystal.atomic_numbers)
         atoms += list(crystal.atomic_numbers)
+        ordered += 1
+    print("ordered: ", ordered)
+    print("disordered: ", disordered)
     unique_z = np.unique(atoms)
+    num_z = len(unique_z)
+    print('unique_z:', num_z)
+    print('min z:', np.min(unique_z))
+    print('max z:', np.max(unique_z))
+    z_dict = {z:i for i, z in enumerate(unique_z)}
+    # Configuration file
+    config = dict()
+    config["atomic_numbers"] = unique_z.tolist()
+    config["node_vectors"] = np.eye(num_z,num_z).tolist() # One-hot encoding
+    with open(config_path, 'w') as f:
+        json.dump(config, f)
+    return config
+
+def build_config_v2(my_path,config_path):
+    # 输入所有cubic.cif数据
+    # 建立one-hot编码以及保存设置
+    atoms=[]
+    # all_files = sorted(glob.glob(os.path.join(my_path,'mp-*.cif')))
+    all_files = sorted(glob.glob(os.path.join(my_path,'*.cif')))
+    # print(all_files)
+    for path in tqdm(all_files):
+        crystal = Structure.from_file(path)
+        elements = crystal.composition.elements
+        print([element.Z for element in elements])
+        atoms += list([element.Z for element in elements])
+    unique_z = np.unique(atoms)
+    print(unique_z)
     num_z = len(unique_z)
     print('unique_z:', num_z)
     print('min z:', np.min(unique_z))
@@ -113,8 +155,14 @@ def main(data_dir, output_path,name_database ,cutoff,max_num_nbr,compress_ratio,
         config_path='./database/mp_config_onehot_updated.json'
     elif name_database=='OQMD':
         config_path='./database/oqmd_config_onehot.json'
+    elif name_database=='SC':
+        # config_path='./database/sc_config_onehot.json'
+        config_path='./database/mp_config_onehot_updated.json'
+
     else:
-        config_path = os.path.join(output_path, 'mp_config_onehot_updated.json')
+        # config_path = os.path.join(output_path, 'mp_config_onehot_updated.json')
+        config_path = os.path.join(output_path, f'{name_database}_config_onehot.json')
+
 
     if os.path.isfile(config_path):
         print('config exists')
@@ -125,9 +173,11 @@ def main(data_dir, output_path,name_database ,cutoff,max_num_nbr,compress_ratio,
         config=build_config(data_dir,config_path)
 
     if name_database=='MP':
-        data_files = sorted(glob.glob(os.path.join(data_dir, 'mp-*.cif')))
+        data_files = sorted(glob.glob(os.path.join(data_dir, '*.cif')))
     elif name_database=='OQMD':
-        data_files = sorted(glob.glob(os.path.join(data_dir, 'oqmd-*.cif')))       
+        data_files = sorted(glob.glob(os.path.join(data_dir, 'oqmd-*.cif')))
+    elif name_database=='SC':
+        data_files = sorted(glob.glob(os.path.join(data_dir, '*.cif')))
     
     for n, chunk in enumerate(tqdm(py_.chunk(data_files[:int(compress_ratio*len(data_files))], chunk_size))):
         graph_names = []
@@ -146,7 +196,7 @@ def main(data_dir, output_path,name_database ,cutoff,max_num_nbr,compress_ratio,
             graph_volume.append(volume)
         for name, lattice,nodes,neighbors,volume in tqdm(zip(graph_names,graph_lattice,graph_nodes, graph_edges,graph_volume)):
             graphs[name] = (lattice,nodes, neighbors,volume)
-        np.savez_compressed(os.path.join(output_path,"my_graph_data_{}_{}_{}_{}_{:03d}.npz".format(name_database,int(cutoff),max_num_nbr,int(compress_ratio*100),n)), graph_dict=graphs)
+        np.savez_compressed(os.path.join(output_path,"mp_onehot_{}_{}_{}_{}_{:03d}.npz".format(name_database,int(cutoff),max_num_nbr,int(compress_ratio*100),n)), graph_dict=graphs)
 
 if __name__ == '__main__':
     import argparse

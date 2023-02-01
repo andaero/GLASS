@@ -15,6 +15,7 @@ from torch.nn.modules.module import Module
 import torch.nn.functional as F
 from torch.nn.utils import clip_grad_value_
 import re
+from datetime import datetime
 
 def get_activation(name):
     act_name = name.lower()
@@ -102,8 +103,9 @@ class Checkpoint(object):
         self.model.weights = self.best_weights
 
 class Model(object):
-    def __init__(self, device, model, name, optimizer, scheduler, clip_value=None,
+    def __init__(self, time, device, model, name, optimizer, scheduler, clip_value=None,
                  metrics=[('loss', nn.MSELoss()), ('mae', nn.L1Loss())]):
+        self.time=time
         self.name=name
         self.model=model.to(device)
         self.optimizer = optimizer
@@ -145,9 +147,10 @@ class Model(object):
 
     def train(self, train_dl, val_dl, num_epochs):
         since = time.time()
-
         dataloaders = {'train': train_dl, 'val': val_dl}
-        history = History(file_path='data/history_{}.csv'.format(self.name))
+        if not os.path.exists(f'data/{self.time}'):
+            os.makedirs(f'data/{self.time}')
+        history = History(file_path=f'data/{self.time}/history_{self.name}.csv'.format(self.name))
         checkpoint = Checkpoint(self)
         for epoch in range(num_epochs):
             epoch_since = time.time()
@@ -237,7 +240,10 @@ class Model(object):
         return all_outputs, all_targets, all_graph_vec
 
     def save(self, model_path="model"):
-        model_path="model/model_{}.pth".format(self.name)
+        current_time = datetime.now().strftime("%d_%H-%M")
+        if not os.path.exists(f'model/{current_time}'):
+            os.makedirs(f'model/{current_time}')
+        model_path=f"model/{current_time}/model_{self.name}.pth"
         torch.save(self.model.state_dict(), model_path)
 
     def load(self, model_path):
