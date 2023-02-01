@@ -19,17 +19,6 @@ result = list(ids_set - folder_set)
 print(result)
 print(len(result))
 
-
-# FOR OLD MPRester API
-from pymatgen.ext.matproj import MPRester  ## to access MP database
-with MPRester("gCZ2GADLIPQQRNXUejPT") as mpr:
-    docs = mpr.query(criteria={"material_id": {"$in": result}}, properties=["material_id", "structure"])
-
-for doc in docs:
-    structure = doc['structure']
-    print(doc['material_id'])
-    structure.to(filename='MEG_2018_cifs/' + doc['material_id'] + '.cif', fmt='cif')
-
 #FOR NEW MPRester API
 # from mp_api.client import MPRester
 # with MPRester("42J8zZHSxx98mcKn0EucWVjKZPETd9ia") as mpr:
@@ -41,4 +30,16 @@ for doc in docs:
 #     structure = doc.structure
 #     structure.to(filename=f'MEG_2018_cifs/{mat_id}.cif', fmt='cif')
 #     print(f"structure for {mat_id} saved")
+
+# FOR OLD MPRester API
+from pymatgen.ext.matproj import MPRester  ## to access MP database
+with MPRester("gCZ2GADLIPQQRNXUejPT") as mpr:
+    docs = mpr.query(criteria={"material_id": {"$in": result}}, properties=["material_id", "structure"])
+
+for doc in docs:
+    structure = doc['structure']
+    print(doc['material_id'])
+    structure.to(filename='MEG_2018_cifs/' + doc['material_id'] + '.cif', fmt='cif')
+
+
 
