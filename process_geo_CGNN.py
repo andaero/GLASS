@@ -30,13 +30,13 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Subset, SubsetRandomSampler
 from models import Model,geo_CGNN
 from data_utils import AtomGraphDataset, Atomgraph_collate
-
+from datetime import datetime
 
 def use_setpLR(param):
     ms = param["milestones"]
     return ms[0] < 0
 
-def create_model(device, model_param, optimizer_param, scheduler_param, load_model):
+def create_model(time, device, model_param, optimizer_param, scheduler_param, load_model):
     model=geo_CGNN(**model_param)
     if load_model: # transfer learning
         for para in model.embedding.parameters():
@@ -78,7 +78,7 @@ def create_model(device, model_param, optimizer_param, scheduler_param, load_mod
     cutoff=model_param.pop('cutoff')
     max_nei=model_param.pop('max_nei')
     name=str(N_block)+'_'+str(cutoff)+'_'+str(max_nei)
-    return Model(device, model, name, optimizer, scheduler, clip_value)
+    return Model(time, device, model, name, optimizer, scheduler, clip_value)
 
 def main(device, model_param, optimizer_param, scheduler_param, dataset_param, dataloader_param,
          num_epochs, seed, load_model,pred,pre_trained_model_path):
@@ -116,12 +116,12 @@ def main(device, model_param, optimizer_param, scheduler_param, dataset_param, d
     print(" ".join(["{}: {}".format(k, len(x)) for k, x in split.items()]))
 
     # Create a DFTGN model
-    model = create_model(device, model_param, optimizer_param, scheduler_param, load_model)
+    current_time = datetime.now().strftime("%d_%H-%M")
+    model = create_model(current_time, device, model_param, optimizer_param, scheduler_param, load_model)
     if load_model:
         print("Loading weights from mymodel.pth")
         model.load(model_path=pre_trained_model_path)
-        print("Model loaded at: {}".format(pre_trained_model_path)) 
-    
+        print("Model loaded at: {}".format(pre_trained_model_path))
 
     if not pred:
     # Train
@@ -147,8 +147,10 @@ def main(device, model_param, optimizer_param, scheduler_param, dataset_param, d
     all_graph_vec=pd.DataFrame(all_graph_vec)
     all_graph_vec['name']=names
     name=str(N_block)+'_'+str(cutoff)+'_'+str(max_nei)
-    df_predictions.to_csv("data/test_predictions_{}.csv".format(name), index=False)
-    all_graph_vec.to_csv("data/all_graph_vec_{}.csv".format(name), index=False)
+    if not os.path.exists(f"data/{current_time}"):
+        os.makedirs(f"data/{current_time}")
+    df_predictions.to_csv(f"data/{current_time}/test_predictions_{name}.csv", index=False)
+    all_graph_vec.to_csv(f"data/{current_time}/all_graph_vec_{name}.csv", index=False)
     print("\nEND")
 
 if __name__ == '__main__':
