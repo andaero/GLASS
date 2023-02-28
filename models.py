@@ -238,12 +238,41 @@ class Model(object):
         all_targets = all_targets.to(torch.device("cpu")).numpy()
 
         return all_outputs, all_targets, all_graph_vec
+    def predict(self, dataloader):
+        self.model.eval()  # Set model to evaluate mode
 
+        # Iterate over data.
+        all_outputs = []
+        all_graph_vec = []
+        for input in dataloader:
+            nodes = input.nodes.to(self.device)
+            edge_sources = input.edge_sources.to(self.device)
+            edge_targets = input.edge_targets.to(self.device)
+            edge_distance = input.edge_distance.to(self.device)
+            graph_indices = input.graph_indices.to(self.device)
+            node_counts = input.node_counts.to(self.device)
+            combine_sets = input.combine_sets.to(self.device)
+            plane_wave = input.plane_wave.to(self.device)
+
+            with torch.set_grad_enabled(False):
+                outputs, graph_vec = self.model(nodes, edge_sources, edge_targets, edge_distance, graph_indices,
+                                                node_counts, combine_sets, plane_wave, output_graph=True)
+
+            outputs = outputs.to(torch.device("cpu")).numpy()
+            graph_vec = graph_vec.to(torch.device("cpu")).numpy()
+            all_outputs.append(outputs)
+            all_graph_vec.append(graph_vec)
+
+        all_outputs = np.concatenate(all_outputs)
+        all_graph_vec = np.concatenate(all_graph_vec)
+
+        all_outputs = torch.FloatTensor(all_outputs).to(self.device)
+        all_outputs = all_outputs.to(torch.device("cpu")).numpy()
+        return all_outputs, all_graph_vec
     def save(self, model_path="model"):
-        current_time = datetime.now().strftime("%d_%H-%M")
-        if not os.path.exists(f'model/{current_time}'):
-            os.makedirs(f'model/{current_time}')
-        model_path=f"model/{current_time}/model_{self.name}.pth"
+        if not os.path.exists(f'model/{self.time}'):
+            os.makedirs(f'model/{self.time}')
+        model_path=f"model/{self.time}/model_{self.name}.pth"
         torch.save(self.model.state_dict(), model_path)
 
     def load(self, model_path):

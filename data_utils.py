@@ -135,6 +135,63 @@ class AtomGraphDataset(Dataset):
     def __len__(self):
         return len(self.graph_names)
 
+def Atomgraph_collate_prediction(batch):
+    nodes = []
+    edge_distance=[]
+    edge_targets=[]
+    edge_sources = []
+    graph_indices = []
+    node_counts = []
+    combine_sets =[]
+    plane_wave = []
+    total_count = 0
+
+    for i, (graph) in enumerate(batch):
+
+        # Numbering for each batch
+        nodes.append(graph.nodes)
+        edge_distance.append(graph.distance)
+        edge_sources.append(graph.edge_sources + total_count) # source number of each edge
+        edge_targets.append(graph.edge_targets + total_count) # target number of each edge
+        combine_sets.append(graph.combine_sets)
+        plane_wave.append(graph.plane_wave)
+        node_counts.append(len(graph))
+        graph_indices += [i] * len(graph)
+        total_count += len(graph)
+
+    combine_sets=np.concatenate(combine_sets,axis=0)
+    plane_wave=np.concatenate(plane_wave,axis=0)
+    nodes = np.concatenate(nodes,axis=0)
+    edge_distance = np.concatenate(edge_distance,axis=0)
+    edge_sources = np.concatenate(edge_sources,axis=0)
+    edge_targets = np.concatenate(edge_targets,axis=0)
+    input = geo_CGNN_Input(nodes,edge_distance, edge_sources, edge_targets, graph_indices, node_counts,combine_sets,plane_wave)
+    return input
+class AtomGraphDatasetPrediction(Dataset):
+    def __init__(self, path, filename, database, cutoff, N_shbf, N_srbf, n_grid_K, n_Gaussian):
+        super(AtomGraphDatasetPrediction, self).__init__()
+
+        graph_data_path = sorted(glob.glob(os.path.join(path, 'npz/' + filename + '*.npz')))
+        print('The number of files = {}'.format(len(graph_data_path)))
+        self.graph_data = load_graph_data(graph_data_path)
+        graphs = self.graph_data.keys()
+
+        self.graph_names = graphs
+        print('start to constructe AtomGraph')
+        graph_data = []
+        for i, name in enumerate(self.graph_names):
+            graph_data.append(AtomGraph(self.graph_data[name], cutoff, N_shbf, N_srbf, n_grid_K, n_Gaussian))
+            if i % 2000 == 0 and i > 0:
+                print('{} graphs constructed'.format(i))
+        print('finish constructe the graph')
+        self.graph_data = graph_data
+
+
+    def __getitem__(self, index):
+        return self.graph_data[index]
+
+    def __len__(self):
+        return len(self.graph_names)
 
 # 构建torch的输入张量
 class geo_CGNN_Input(object):
