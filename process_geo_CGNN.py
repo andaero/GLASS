@@ -40,11 +40,11 @@ def create_model(time, device, model_param, optimizer_param, scheduler_param, lo
     model=geo_CGNN(**model_param)
     if load_model: # transfer learning
         for para in model.embedding.parameters():
-            para.requires_grad = False
+            para.requires_grad = True #False
         for para in model.conv.parameters():
-            para.requires_grad = False
+            para.requires_grad = True #False
         for para in model.MLP_psi2n.parameters():
-            para.requires_grad = False
+            para.requires_grad = True #Fal
         print("Freezed embedding/conv/MLP_psi2n")
     
 
@@ -116,10 +116,11 @@ def main(device, model_param, optimizer_param, scheduler_param, dataset_param, d
     print(" ".join(["{}: {}".format(k, len(x)) for k, x in split.items()]))
 
     # Create a DFTGN model
-    current_time = datetime.now().strftime("%d_%H-%M")
+    current_time = datetime.now().strftime("%m_%d_%H-%M")
     model = create_model(current_time, device, model_param, optimizer_param, scheduler_param, load_model)
+    print("LOAD MODEL", load_model)
     if load_model:
-        print("Loading weights from mymodel.pth")
+        print(f"Loading weights from {pre_trained_model_path}.pth")
         model.load(model_path=pre_trained_model_path)
         print("Model loaded at: {}".format(pre_trained_model_path))
 
