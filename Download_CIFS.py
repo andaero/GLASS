@@ -8,7 +8,7 @@ print(ids_df)
 ids = ids_df['id'].to_list()
 print(len(ids))
 
-folder = "MEG_2018_cifs"
+folder = "database/cif"
 filenames = os.listdir(folder)
 filenames_without_extension = [os.path.splitext(f)[0] for f in filenames]
 
@@ -28,7 +28,7 @@ print(len(result))
 # for doc in docs:
 #     mat_id = doc.material_id
 #     structure = doc.structure
-#     structure.to(filename=f'MEG_2018_cifs/{mat_id}.cif', fmt='cif')
+#     structure.to(filename=f'database/cif/{mat_id}.cif', fmt='cif')
 #     print(f"structure for {mat_id} saved")
 
 # FOR OLD MPRester API
@@ -38,8 +38,9 @@ with MPRester("gCZ2GADLIPQQRNXUejPT") as mpr:
 
 for doc in docs:
     structure = doc['structure']
-    print(doc['material_id'])
-    structure.to(filename='MEG_2018_cifs/' + doc['material_id'] + '.cif', fmt='cif')
+    structure.to(filename='database/cif/' + doc['material_id'] + '.cif', fmt='cif')
+    print(f"structure for {doc['material_id']} saved")
+
 
 
 

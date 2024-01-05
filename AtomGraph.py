@@ -158,7 +158,10 @@ def main(data_dir, output_path,name_database ,cutoff,max_num_nbr,compress_ratio,
     elif name_database=='SC':
         # config_path='./database/sc_config_onehot.json'
         config_path='./database/mp_config_onehot_updated.json'
-
+    elif name_database=='icsg3d':
+        config_path='./database/mp_config_onehot_updated.json'
+    elif name_database=='icsg3d_Ef':
+        config_path='./database/mp_config_onehot_updated.json'
     else:
         # config_path = os.path.join(output_path, 'mp_config_onehot_updated.json')
         config_path = os.path.join(output_path, f'{name_database}_config_onehot.json')
@@ -177,6 +180,10 @@ def main(data_dir, output_path,name_database ,cutoff,max_num_nbr,compress_ratio,
     elif name_database=='OQMD':
         data_files = sorted(glob.glob(os.path.join(data_dir, 'oqmd-*.cif')))
     elif name_database=='SC':
+        data_files = sorted(glob.glob(os.path.join(data_dir, '*.cif')))
+    elif name_database=='icsg3d':
+        data_files = sorted(glob.glob(os.path.join(data_dir, '*.cif')))
+    else:
         data_files = sorted(glob.glob(os.path.join(data_dir, '*.cif')))
     
     for n, chunk in enumerate(tqdm(py_.chunk(data_files[:int(compress_ratio*len(data_files))], chunk_size))):
